@@ -1,0 +1,21 @@
+{
+  "name": "myhotnews",
+  "version": "1.0.0",
+  "description": "Scheduled news aggregator: HN + Nitter → ranked by comments-per-hour z-score → Cloudflare Pages",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chem/myhotnews"
+  },
+  "type": "module",
+  "scripts": {
+    "generate": "node src/generate.js",
+    "test": "node --test test/config.test.js test/process.test.js test/render.test.js test/fetch-nitter.test.js",
+    "test:integration": "node --test test/fetch.integration.test.js"
+  },
+  "dependencies": {
+    "playwright": "^1.58.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

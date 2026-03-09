@@ -1,0 +1,76 @@
+# .github/workflows/fetch.yml
+name: Fetch and Deploy
+
+on:
+  schedule:
+    # Every 90 minutes — two expressions interleaved at :09 and :39
+    - cron: '9 */3 * * *'
+    - cron: '39 1,4,7,10,13,16,19,22 * * *'
+  workflow_dispatch: # allows manual trigger from GitHub UI
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check quiet hours (3-5 AM America/New_York)
+        id: quiet
+        run: |
+          HOUR=$(TZ='America/New_York' date +%H)
+          if [ "$HOUR" -ge 3 ] && [ "$HOUR" -lt 5 ]; then
+            echo "Quiet hours (${HOUR}:xx ET) — skipping run"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.quiet.outputs.skip != 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.quiet.outputs.skip != 'true'
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.quiet.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Install Playwright browsers
+        if: steps.quiet.outputs.skip != 'true'
+        run: npx playwright install firefox --with-deps
+
+      - name: Generate site
+        if: steps.quiet.outputs.skip != 'true'
+        run: npm run generate
+        env:
+          DEBUG: '1'
+
+      - name: Upload filter log
+        if: always() && steps.quiet.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: filter-log
+          path: filter.log
+          if-no-files-found: ignore
+
+      - name: Upload debug screenshots
+        if: always() && steps.quiet.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: debug/
+          if-no-files-found: ignore
+
+      - name: Deploy to Cloudflare Pages
+        if: steps.quiet.outputs.skip != 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=myhotnews

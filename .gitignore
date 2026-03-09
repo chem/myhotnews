@@ -1,0 +1,29 @@
+node_modules/
+dist/
+
+# Local secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Playwright MCP session artifacts
+.playwright-mcp/
+
+# Debug screenshots from failed scrapes
+debug/
+
+# Screenshots from Playwright verification
+screenshot-*.png
+
+# macOS metadata
+.DS_Store
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Log files
+*.log
+npm-debug.log*
